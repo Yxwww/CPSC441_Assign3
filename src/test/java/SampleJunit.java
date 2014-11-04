@@ -1,4 +1,4 @@
-import static org.junit.Assert.assertEquals;
+/*import static org.junit.Assert.assertEquals;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -10,4 +10,4 @@ public class SampleJunit {
   public void testMultiply() {
     assertEquals("10 x 5 must be 50", 49, 5*10);
   }
-} 
+} */

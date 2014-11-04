@@ -18,6 +18,4 @@ public class Main {
         Router r = new Router(sock, logFactory);
         r.run();
     }
-
-
 }
