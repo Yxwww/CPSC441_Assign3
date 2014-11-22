@@ -16,15 +16,14 @@ public class TopologyWrapper {
         try(BufferedReader br = new BufferedReader(new FileReader(topoFileName))) {
             String firstLine = br.readLine();
             String[] tokens = firstLine.split(" ");
-            if(tokens[0].equalsIgnoreCase("5")){
+            if(tokens.length == 1){
                 this.routerNum = Integer.parseInt(tokens[0]);
-                this.linkCostMatrix = new int[5][5];// init matrix to the right number of routers
+                this.linkCostMatrix = new int[this.routerNum][this.routerNum];// init matrix to the right number of routers
                 int rowCounter = 0;
                 for(String line; (line = br.readLine()) != null; ) {
-                    System.out.println(line);
                     StringTokenizer tempTokens = new StringTokenizer(line);
                     if(tempTokens.countTokens() == this.routerNum){
-                        for(int i=0;i<5;i++){
+                        for(int i=0;i<this.routerNum;i++){
                             this.linkCostMatrix[rowCounter][i] = Integer.parseInt(tempTokens.nextToken());
                         }
                         rowCounter++;
@@ -33,12 +32,14 @@ public class TopologyWrapper {
                         System.exit(-1);
                     }
                 }
+                System.out.println(this.toString());
+                System.out.println("#Topology successfully loaded.");
             }else{
                 // handles wrong number of routers
+                System.out.println("wrong formate of first line in topology");
                 System.exit(-1);
             }
-            this.toString();
-            System.out.println("#Topology successfully loaded.");
+
 
             // line is not visible here.
         }catch(IOException e){
@@ -54,6 +55,6 @@ public class TopologyWrapper {
             }
             returnString += "\n";
         }
-        return "routner number: "+this.routerNum+"\n"+returnString;
+        return "router number: "+this.routerNum+"\n"+returnString;
     }
 }

@@ -13,7 +13,6 @@ public class UDPSocket implements IUDPSocket {
 
     public UDPSocket(DatagramSocket sock) {
         this.sock = sock;
-
     }
 
     public void setSoTimeout(int msTimeout) throws SocketException {

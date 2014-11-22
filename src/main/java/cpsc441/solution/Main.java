@@ -13,8 +13,8 @@ public class Main {
         DatagramSocket s = null;
 
         configWrapper config = new configWrapper("config.txt");
-        TopologyWrapper topology = new TopologyWrapper("topology.txt");
-
+        TopologyWrapper topology = new TopologyWrapper("testTopo.txt");
+        System.out.println("haha");
         //You shouldn't need to modify this code.
         IUDPSocket sock = new UDPSocket(s);
         ILogFactory logFactory = new LogFactory();
