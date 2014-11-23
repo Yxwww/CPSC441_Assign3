@@ -4,10 +4,12 @@ import cpsc441.doNOTmodify.DVRInfo;
 import cpsc441.doNOTmodify.ILogFactory;
 import cpsc441.doNOTmodify.IUDPSocket;
 
+
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.*;
 
 public class Router implements Runnable {
     public IUDPSocket socket;
@@ -21,9 +23,8 @@ public class Router implements Runnable {
         this.log    = logFactory;
         this.ID     = id;
         this.config = new configWrapper("config.txt");
-        System.out.println(this.ID);
+        System.out.println("Generating Router ["+this.ID+"].");
         this.init();
-        this.run();
     }
 
     public void init(){
@@ -32,7 +33,6 @@ public class Router implements Runnable {
         while( success == false){
             try{
                 this.socket.send(dvr);
-                System.out.println("hehe");
                 DVRInfo rcvPacket = this.socket.receive();
                 this.nextHop = new int[rcvPacket.mincost.length];
                 this.linkCost = rcvPacket.mincost;
@@ -40,7 +40,7 @@ public class Router implements Runnable {
                 //System.out.println(""+intArrayToString(this.linkCost) + "\n"+intArrayToString(this.minCost));
                 success = true; // LET IT HANG!!!
             }catch(SocketTimeoutException e){
-                System.out.println("Router "+this.ID+ "socket timed out during init(): "+e);
+                //System.out.println("Router "+this.ID+ "socket timed out during init(): "+e);
                 continue;
             }catch (IOException e){
                 System.out.println(" IO exception: " + e);
@@ -50,21 +50,32 @@ public class Router implements Runnable {
     }
 
     public void run() {
-        DVRInfo dvr = new DVRInfo(this.ID, 5 , 0, DVRInfo.PKT_HELLO); // hello packet!
+        // find all the adjacent IDs
+        List<DVRInfo> DVRList = new ArrayList<DVRInfo>();
+        for(int i=0;i<this.linkCost.length;i++){
+            if(this.linkCost[i]!=config.COST_INFTY && this.linkCost[i]!=0){
+                System.out.println("sending dvr to "+i);
+                DVRInfo dvr = new DVRInfo(this.ID, i , 0, DVRInfo.PKT_ROUTE); // hello packet!
+                dvr.mincost = this.minCost;
+                DVRList.add(dvr);
+            }
+        }
+        //DVRInfo dvr = new DVRInfo(this.ID, 1 , 0, DVRInfo.PKT_ROUTE); // hello packet!
         boolean success = false;
         while(success == false){
             try{
-                this.socket.send(dvr);
+                //System.out.println(dvr.toString());
+                for(DVRInfo anDvr : DVRList){
+                    this.socket.send(anDvr);
+                }
 
                 DVRInfo rcvPacket = this.socket.receive();
-                this.nextHop = new int[rcvPacket.mincost.length];
-                this.linkCost = rcvPacket.mincost;
-                this.minCost = rcvPacket.mincost;
-                System.out.println("receive from source: "+rcvPacket.sourceid);
+
+                System.out.println("In Router["+this.ID+"]  -- "+rcvPacket.toString());
                 //System.out.println(""+intArrayToString(this.linkCost) + "\n"+intArrayToString(this.minCost));
-                success = true; // LET IT HANG!!!
+                //success = true; // LET IT HANG!!!
             }catch(SocketTimeoutException e){
-                System.out.println("Router "+this.ID+ "socket timed out during run(): "+e);
+                //System.out.println("Router "+this.ID+ "socket timed out during run(): "+e);
                 continue;
             }catch (IOException e){
                 System.out.println(" IO exception: " + e);
