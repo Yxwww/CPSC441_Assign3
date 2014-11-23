@@ -42,7 +42,7 @@ public class DVRInfo {
 		this.destid = dvr.destid;
 		this.seqnum = dvr.seqnum;
 		this.type = dvr.type;
-		System.arraycopy(dvr.mincost, 0, mincost, 0, mincost.length);
+		this.mincost = Arrays.copyOf(dvr.mincost, dvr.mincost.length);
 	}
 
 	public DVRInfo(int sourceid, int destid, int seqnum, int type) {
@@ -112,8 +112,30 @@ public class DVRInfo {
 	}
 
 	private void initMinCost() {
-		for (int i = 0; i < MAX_ROUTERS; i++) {
-			mincost[i] = COST_INFTY;
-		}
+        Arrays.fill(mincost, COST_INFTY);
 	}
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DVRInfo dvrInfo = (DVRInfo) o;
+
+        if (destid != dvrInfo.destid) return false;
+        if (sourceid != dvrInfo.sourceid) return false;
+        if (type != dvrInfo.type) return false;
+        if (!Arrays.equals(mincost, dvrInfo.mincost)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = sourceid;
+        result = 31 * result + destid;
+        result = 31 * result + type;
+        result = 31 * result + (mincost != null ? Arrays.hashCode(mincost) : 0);
+        return result;
+    }
 }

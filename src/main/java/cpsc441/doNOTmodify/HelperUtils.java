@@ -11,7 +11,7 @@ import java.util.Properties;
 /**
  * This class some useful utility methods which are used by other classes.
  */
-class HelperUtils {
+public class HelperUtils {
 	/**
 	 * Prevent instantiation by making the constructor private.
 	 */

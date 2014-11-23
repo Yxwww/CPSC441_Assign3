@@ -89,19 +89,17 @@ public class PortHandler extends Thread {
 		}
 	}
 
-	private void handleRouteMessage(DVRInfo recvInfo, DatagramPacket recvPacket) throws IOException {
-		// if we haven't received a hello message from the destination
-		if (!addressMap.containsKey(recvInfo.destid))
-			throw new RuntimeException(String.format(
-					"Router %s tries to send a route message to router %s which is not present yet.",
-					recvInfo.sourceid, recvInfo.destid));
+    private void handleRouteMessage(DVRInfo recvInfo, DatagramPacket recvPacket) throws IOException {
+        // if we haven't received a hello message from the destination
+        if (!addressMap.containsKey(recvInfo.destid)) {
+            System.err.printf(
+                    "Router %s tries to send a route message to router %s which is not present yet.%n",
+                    recvInfo.sourceid,
+                    recvInfo.destid);
 
-		// if the destination is not a neighbor simple drop the packet
+            return;
 
-        if (topology.getWeight(recvInfo.sourceid, recvInfo.destid) >= HelperUtils.getCostInfty()) {
-			System.err.println("Not a neighbor, packet dropped " + recvInfo);
-			return;
-		}
+        }
 
 		// send the packet to dest
 		InetAddress destAddr = addressMap.get(recvInfo.destid);
