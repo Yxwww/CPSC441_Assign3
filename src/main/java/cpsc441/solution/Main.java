@@ -29,7 +29,6 @@ public class Main {
                 sock.setSoTimeout(config.ARQ_TIMER);
                 ILogFactory logFactory = new LogFactory();
                 Router r = new Router(id, sock, logFactory);
-                r.init();
                 r.run();
             }catch(SocketException e){
                 System.out.println("Error creating DatagramSocket "+e);
