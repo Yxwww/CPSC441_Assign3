@@ -73,7 +73,7 @@ public class Router implements Runnable {
         while(success == false){
             try{
                 //System.out.println(dvr.toString());
-                if(changed)
+                //if(changed)
                 for(DVRInfo anDvr : DVRList){
                     this.finalLog += ("["+this.ID+"] sent "+anDvr.toString()+this.newLine);
                     this.socket.send(anDvr);
