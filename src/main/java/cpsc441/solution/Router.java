@@ -31,6 +31,7 @@ public class Router implements Runnable {
         this.config = new configWrapper("config.txt");
         System.out.println("Generating Router ["+this.ID+"].");
         this.init();
+        System.out.println("Initialization Complete.");
     }
 
     public void init(){
@@ -46,7 +47,6 @@ public class Router implements Runnable {
                 initNextHop(); // initialize the nextHop
                 //System.out.println(""+intArrayToString(this.linkCost) + "\n"+intArrayToString(this.minCost));
                 this.finalLog+= "["+this.ID+"] send "+rcvPacket.toString()+this.newLine;
-
                 success = true; // LET IT HANG!!!
             }catch(SocketTimeoutException e){
                 //System.out.println("Router "+this.ID+ "socket timed out during init(): "+e);
