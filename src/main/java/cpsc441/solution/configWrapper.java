@@ -8,8 +8,9 @@ import java.io.*;
  */
 public class configWrapper {
     public int NEM_ID,ARQ_TIMER,COST_INFTY;
+    // Wrapper for conifg
     public configWrapper(String fileName){
-        System.out.println("Reading from: " + fileName);
+        //System.out.println("Reading from: " + fileName);
         try(BufferedReader br = new BufferedReader(new FileReader(fileName))) {
             for(String line; (line = br.readLine()) != null; ) {
                 StringTokenizer tokens = new StringTokenizer(line);
@@ -26,7 +27,7 @@ public class configWrapper {
                     System.out.println(" Unrecongnized conifg attribute. Life is hard !");
                 }
             }
-            System.out.println(this.toString() + "\n#Config file successfully loaded");
+            System.out.println("#Config file successfully loaded");
             // line is not visible here.
         }catch(IOException e){
             System.out.println("Unable to read from "+ fileName + ". due to:" + e);

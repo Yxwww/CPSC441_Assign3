@@ -22,6 +22,7 @@ public class Router implements Runnable {
     public String newLine = System.getProperty("line.separator");
     public String finalLog = "";
     public boolean gotUpdated = false;
+    public boolean done = false;
 
     public Router(int id,IUDPSocket sock, ILogFactory logFactory)     {
         this.socket = sock;
@@ -69,8 +70,8 @@ public class Router implements Runnable {
             }
         }
         //DVRInfo dvr = new DVRInfo(this.ID, 1 , 0, DVRInfo.PKT_ROUTE); // hello packet!
-        boolean success = false;
-        while(success == false){
+        //boolean success = false;
+        while(!this.done){
             try{
                 //System.out.println(dvr.toString());
                 //if(changed)
@@ -100,10 +101,10 @@ public class Router implements Runnable {
             int[] receivedMinCost = rcvDVR.mincost;
             //System.out.println(rcvDVR.toString());
             for (int i = 0; i < receivedMinCost.length; i++) {
-                if ((receivedMinCost[i] + this.minCost[rcvDVR.sourceid]) < this.minCost[i]) {
-                    System.out.println("Update in Router[" + this.ID + "] distance to [" + i + "] minCost:" + this.minCost[i] + "->"
-                            + (receivedMinCost[i] + this.linkCost[rcvDVR.sourceid]) + " & nextHop ID:" + this.nextHop[i] + "->"
-                            + rcvDVR.sourceid);
+                if ((receivedMinCost[i] + this.minCost[rcvDVR.sourceid]) <= this.minCost[i]) {
+                    //System.out.println("Update in Router[" + this.ID + "] distance to [" + i + "] minCost:" + this.minCost[i] + "->"
+                            //+ (receivedMinCost[i] + this.linkCost[rcvDVR.sourceid]) + " & nextHop ID:" + this.nextHop[i] + "->"
+                            //+ rcvDVR.sourceid);
                     this.finalLog+=("["+this.ID+"] receive "+rcvDVR.toString()+this.newLine); //updating log file
                     this.minCost[i] = (receivedMinCost[i] + this.linkCost[rcvDVR.sourceid]);
                     this.nextHop[i] = rcvDVR.sourceid;
@@ -111,20 +112,25 @@ public class Router implements Runnable {
             }
         }else if(rcvDVR.type == DVRInfo.PKT_QUIT){      // when receive QUIT packet
             System.out.println("Received Quit Packet!!");
+            this.done = true;
             PrintStream log = new PrintStream(System.out);
             String readableDV = Util.printdv(this.ID, this.minCost,this.nextHop);
             log.println(readableDV);
 
+            // adding table info to log
             this.finalLog+=("["+this.ID+"] quit "+rcvDVR.toString()+this.newLine);
+            this.finalLog+=readableDV;
+            //Write logs to file
             try{
-                FileWriter logFile = new FileWriter(this.ID+".log");
+                FileWriter logFile = new FileWriter("router_"+this.ID+".log");
                 logFile.write(finalLog);
                 logFile.close();
             }catch(IOException e){
                 System.out.println("Unable to operate file: "+this.ID+".log     due to:" + e);
             }
-            // Wanna close the socket.
-            System.exit(1);
+
+            //TODO: Wanna close the socket.
+            System.exit(0);
             // Not a route packet just ignored for now.
         }
     }
@@ -142,7 +148,7 @@ public class Router implements Runnable {
     // Initialize nextHop array.
     public void initNextHop(){
         for(int i=0;i<this.nextHop.length;i++){
-            if(this.linkCost[i]!=999&&this.linkCost[i]!=0)
+            if(this.linkCost[i]!=999)
             {
                 this.nextHop[i] = this.ID;
             }else{
