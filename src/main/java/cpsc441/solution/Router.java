@@ -20,7 +20,6 @@ public class Router implements Runnable {
     public configWrapper config;
     public int[] nextHop,linkCost,minCost;
     public String newLine = System.getProperty("line.separator");
-    public String finalLog = "";
     public boolean gotUpdated = false;
     public boolean done = false;
 
@@ -45,8 +44,6 @@ public class Router implements Runnable {
                 this.linkCost = rcvPacket.mincost;
                 this.minCost = rcvPacket.mincost;
                 initNextHop(); // initialize the nextHop
-                //System.out.println(""+intArrayToString(this.linkCost) + "\n"+intArrayToString(this.minCost));
-                this.finalLog+= "["+this.ID+"] send "+rcvPacket.toString()+this.newLine;
                 rcvPacket = null;
                 success = true; // LET IT HANG!!!
             }catch(SocketTimeoutException e){
@@ -61,6 +58,17 @@ public class Router implements Runnable {
 
     public void run() {
         init();
+        PrintStream ps = new PrintStream(System.out);
+        try
+        {
+            String path = "Router_[" + this.ID + "].log";
+            ps = this.log.newLogFile(new File(path));
+        }catch(FileNotFoundException e)
+        {
+            System.out.println(e);
+        }catch(IOException e){
+            System.out.println(e);
+        }
 
         // find all the adjacent IDs
         List<DVRInfo> DVRList = new ArrayList<DVRInfo>();
@@ -80,13 +88,11 @@ public class Router implements Runnable {
         while(true){
             try{
                 for(DVRInfo anDvr : DVRList){
-                    //this.finalLog += ("["+this.ID+"] sent "+anDvr.toString()+this.newLine);
                     this.socket.send(anDvr);
+                    ps.printf("[%d] sending %s"+this.newLine, this.ID, anDvr);
                 }
                 this.socket.setSoTimeout(this.config.ARQ_TIMER);
                 rcvDVR = this.socket.receive();
-                //receivePacketHandler(rcvPacket);
-                //success = true; // LET IT HANG!!!
             }catch(SocketTimeoutException e){
                 //System.out.println("Router "+this.ID+ "socket timed out during run(): "+e);
                 continue;
@@ -98,26 +104,9 @@ public class Router implements Runnable {
             if (rcvDVR.type == DVRInfo.PKT_QUIT) {      // when receive QUIT packet
                 System.out.println("Received Quit Packet!!");
                 this.done = true;
-                PrintStream log = new PrintStream(System.out);
-                String readableDV = Util.printdv(this.ID, this.minCost, this.nextHop);
-                log.println(readableDV);
-
-                // adding table info to log
-                this.finalLog += ("[" + this.ID + "] quit " + rcvDVR.toString() + this.newLine);
-                this.finalLog += readableDV;
-                //Write logs to file
-                try {
-                    FileWriter logFile = new FileWriter("router_" + this.ID + ".log");
-                    logFile.write(finalLog);
-                    logFile.close();
-                    break;
-                } catch (IOException e) {
-                    System.out.println("Unable to operate file: " + this.ID + ".log     due to:" + e);
-                }
-
-                //TODO: Wanna close the socket.
-                //System.exit(0);
-                // Not a route packet just ignored for now.
+                ps.printf(this.newLine+Util.printdv(this.ID, this.minCost, this.nextHop));
+                ps.close();
+                break;
             }else if (rcvDVR.type == DVRInfo.PKT_ROUTE && rcvDVR.sourceid!=config.NEM_ID) { // check if the DVR is legit from neighbours
                 int[] receivedMinCost = rcvDVR.mincost;
                 //System.out.println(rcvDVR.toString());
@@ -127,6 +116,7 @@ public class Router implements Runnable {
                             //+ (receivedMinCost[i] + this.linkCost[rcvDVR.sourceid]) + " & nextHop ID:" + this.nextHop[i] + "->"
                             //+ rcvDVR.sourceid);
                         //this.finalLog += ("[" + this.ID + "] receive " + rcvDVR.toString() + this.newLine); //updating log file
+                        ps.printf("[%d] receive %s"+this.newLine, this.ID, rcvDVR);
                         this.minCost[i] = (receivedMinCost[i] + this.linkCost[rcvDVR.sourceid]);
                         this.nextHop[i] = rcvDVR.sourceid;
                     }
