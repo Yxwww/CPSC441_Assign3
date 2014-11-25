@@ -161,7 +161,7 @@ public class PortHandler extends Thread {
 				System.out.println("[NEM] Quit Unsuccessful.");
 			}
 
-			if (retryCount >= 3) {
+			if (retryCount >= 30) {
 				System.out.println("[NEM] Unable to quit. There is a problem with network or router's algorithm.");
 				return 1;
 			}

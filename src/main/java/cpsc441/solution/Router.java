@@ -30,7 +30,7 @@ public class Router implements Runnable {
         this.ID     = id;
         this.config = new configWrapper("config.txt");
         System.out.println("Generating Router ["+this.ID+"].");
-        this.init();
+        //this.init();
         System.out.println("Initialization Complete.");
     }
 
@@ -47,6 +47,7 @@ public class Router implements Runnable {
                 initNextHop(); // initialize the nextHop
                 //System.out.println(""+intArrayToString(this.linkCost) + "\n"+intArrayToString(this.minCost));
                 this.finalLog+= "["+this.ID+"] send "+rcvPacket.toString()+this.newLine;
+                rcvPacket = null;
                 success = true; // LET IT HANG!!!
             }catch(SocketTimeoutException e){
                 //System.out.println("Router "+this.ID+ "socket timed out during init(): "+e);
@@ -59,6 +60,8 @@ public class Router implements Runnable {
     }
 
     public void run() {
+        init();
+
         // find all the adjacent IDs
         List<DVRInfo> DVRList = new ArrayList<DVRInfo>();
         for(int i=0;i<this.linkCost.length;i++){
@@ -69,21 +72,20 @@ public class Router implements Runnable {
                 DVRList.add(dvr);
             }
         }
+
+
+        DVRInfo rcvDVR = null;
         //DVRInfo dvr = new DVRInfo(this.ID, 1 , 0, DVRInfo.PKT_ROUTE); // hello packet!
         //boolean success = false;
-        while(!this.done){
+        while(true){
             try{
-                //System.out.println(dvr.toString());
-                //if(changed)
                 for(DVRInfo anDvr : DVRList){
-                    this.finalLog += ("["+this.ID+"] sent "+anDvr.toString()+this.newLine);
+                    //this.finalLog += ("["+this.ID+"] sent "+anDvr.toString()+this.newLine);
                     this.socket.send(anDvr);
                 }
-
-                DVRInfo rcvPacket = this.socket.receive();
-
-                //System.out.println("In Router["+this.ID+"] received: "+rcvPacket.toString());
-                receivePacketHandler(rcvPacket);
+                this.socket.setSoTimeout(this.config.ARQ_TIMER);
+                rcvDVR = this.socket.receive();
+                //receivePacketHandler(rcvPacket);
                 //success = true; // LET IT HANG!!!
             }catch(SocketTimeoutException e){
                 //System.out.println("Router "+this.ID+ "socket timed out during run(): "+e);
@@ -92,47 +94,53 @@ public class Router implements Runnable {
                 System.out.println(" IO exception: " + e);
                 continue;
             }
-        }
+
+            if (rcvDVR.type == DVRInfo.PKT_QUIT) {      // when receive QUIT packet
+                System.out.println("Received Quit Packet!!");
+                this.done = true;
+                PrintStream log = new PrintStream(System.out);
+                String readableDV = Util.printdv(this.ID, this.minCost, this.nextHop);
+                log.println(readableDV);
+
+                // adding table info to log
+                this.finalLog += ("[" + this.ID + "] quit " + rcvDVR.toString() + this.newLine);
+                this.finalLog += readableDV;
+                //Write logs to file
+                try {
+                    FileWriter logFile = new FileWriter("router_" + this.ID + ".log");
+                    logFile.write(finalLog);
+                    logFile.close();
+                    break;
+                } catch (IOException e) {
+                    System.out.println("Unable to operate file: " + this.ID + ".log     due to:" + e);
+                }
+
+                //TODO: Wanna close the socket.
+                //System.exit(0);
+                // Not a route packet just ignored for now.
+            }else if (rcvDVR.type == DVRInfo.PKT_ROUTE && rcvDVR.sourceid!=config.NEM_ID) { // check if the DVR is legit from neighbours
+                int[] receivedMinCost = rcvDVR.mincost;
+                //System.out.println(rcvDVR.toString());
+                for (int i = 0; i < receivedMinCost.length; i++) {
+                    if ((receivedMinCost[i] + this.minCost[rcvDVR.sourceid]) <= this.minCost[i]) {
+                        //System.out.println("Update in Router[" + this.ID + "] distance to [" + i + "] minCost:" + this.minCost[i] + "->"
+                            //+ (receivedMinCost[i] + this.linkCost[rcvDVR.sourceid]) + " & nextHop ID:" + this.nextHop[i] + "->"
+                            //+ rcvDVR.sourceid);
+                        //this.finalLog += ("[" + this.ID + "] receive " + rcvDVR.toString() + this.newLine); //updating log file
+                        this.minCost[i] = (receivedMinCost[i] + this.linkCost[rcvDVR.sourceid]);
+                        this.nextHop[i] = rcvDVR.sourceid;
+                    }
+                }
+            }
+
+
+
+        }//END of while
     }
 
     // handles the packet that received when routing
     public void receivePacketHandler(DVRInfo rcvDVR){
-        if(rcvDVR.type == DVRInfo.PKT_ROUTE && rcvDVR.sourceid!=this.config.NEM_ID) { // check if the DVR is legit from neighbours
-            int[] receivedMinCost = rcvDVR.mincost;
-            //System.out.println(rcvDVR.toString());
-            for (int i = 0; i < receivedMinCost.length; i++) {
-                if ((receivedMinCost[i] + this.minCost[rcvDVR.sourceid]) <= this.minCost[i]) {
-                    //System.out.println("Update in Router[" + this.ID + "] distance to [" + i + "] minCost:" + this.minCost[i] + "->"
-                            //+ (receivedMinCost[i] + this.linkCost[rcvDVR.sourceid]) + " & nextHop ID:" + this.nextHop[i] + "->"
-                            //+ rcvDVR.sourceid);
-                    this.finalLog+=("["+this.ID+"] receive "+rcvDVR.toString()+this.newLine); //updating log file
-                    this.minCost[i] = (receivedMinCost[i] + this.linkCost[rcvDVR.sourceid]);
-                    this.nextHop[i] = rcvDVR.sourceid;
-                }
-            }
-        }else if(rcvDVR.type == DVRInfo.PKT_QUIT){      // when receive QUIT packet
-            System.out.println("Received Quit Packet!!");
-            this.done = true;
-            PrintStream log = new PrintStream(System.out);
-            String readableDV = Util.printdv(this.ID, this.minCost,this.nextHop);
-            log.println(readableDV);
 
-            // adding table info to log
-            this.finalLog+=("["+this.ID+"] quit "+rcvDVR.toString()+this.newLine);
-            this.finalLog+=readableDV;
-            //Write logs to file
-            try{
-                FileWriter logFile = new FileWriter("router_"+this.ID+".log");
-                logFile.write(finalLog);
-                logFile.close();
-            }catch(IOException e){
-                System.out.println("Unable to operate file: "+this.ID+".log     due to:" + e);
-            }
-
-            //TODO: Wanna close the socket.
-            System.exit(0);
-            // Not a route packet just ignored for now.
-        }
     }
 
 

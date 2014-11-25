@@ -33,6 +33,8 @@ public class Main {
                 Router r = new Router(id, sock, logFactory);
                 System.out.println("Routing ...");
                 r.run();
+                s.close();
+                System.out.println("DONE");
             }catch(SocketException e){
                 System.out.println("Error creating DatagramSocket "+e);
             }
